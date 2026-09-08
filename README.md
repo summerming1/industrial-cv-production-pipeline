@@ -6,6 +6,18 @@ A **clean-room, runnable public showcase** of the engineering patterns behind pr
 
 > This is not a copy of a private/customer repository. It contains no customer code, factory media, equipment IDs, production thresholds, RTSP URLs, MES/MQ routes, or proprietary process rules.
 
+## 15-second reviewer map
+
+| Capability | Verify here |
+|---|---|
+| YOLO segmentation adapter | [`src/industrial_cv/inference.py`](src/industrial_cv/inference.py) |
+| Typed detections / frame contracts | [`src/industrial_cv/types.py`](src/industrial_cv/types.py) |
+| Polygon ROI / spatial logic | [`src/industrial_cv/roi.py`](src/industrial_cv/roi.py) |
+| Time-based temporal event logic | [`src/industrial_cv/events.py`](src/industrial_cv/events.py) |
+| End-to-end frame orchestration | [`src/industrial_cv/runtime.py`](src/industrial_cv/runtime.py) |
+| ONNX / TensorRT export adapter | [`src/industrial_cv/export.py`](src/industrial_cv/export.py) |
+| Runnable behavior | [`tests/`](tests/) and [`examples/demo.py`](examples/demo.py) |
+
 ## What this demonstrates
 
 - YOLO-style **segmentation inference** through an optional Ultralytics adapter
