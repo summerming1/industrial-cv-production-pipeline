@@ -1,5 +1,7 @@
 # Industrial Computer Vision Production Pipeline
 
+[![core-tests](https://github.com/summerming1/industrial-cv-production-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/summerming1/industrial-cv-production-pipeline/actions/workflows/ci.yml)
+
 A **clean-room, runnable public showcase** of the engineering patterns behind production computer-vision systems: segmentation inference, ROI logic, temporal event detection, model export, and testable orchestration.
 
 > This is not a copy of a private/customer repository. It contains no customer code, factory media, equipment IDs, production thresholds, RTSP URLs, MES/MQ routes, or proprietary process rules.
@@ -93,3 +95,5 @@ The architecture is based on experience building industrial video analytics for 
 ## Portfolio relevance
 
 This repository supports work involving **Computer Vision, YOLO, segmentation, real-time video analytics, ROI/event logic, ONNX/TensorRT deployment, and production ML engineering**.
+
+For the exact public-facing Upwork copy and recommended media order, see [docs/UPWORK_PORTFOLIO.md](docs/UPWORK_PORTFOLIO.md).
