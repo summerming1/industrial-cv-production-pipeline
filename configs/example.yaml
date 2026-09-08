@@ -1,0 +1,19 @@
+model:
+  path: weights/example-seg.pt
+  confidence: 0.35
+  iou: 0.50
+  imgsz: 640
+  device: cpu
+
+roi:
+  name: process_zone
+  points: [[120, 80], [520, 80], [560, 420], [100, 420]]
+
+event:
+  start_after_s: 0.6
+  end_after_s: 0.8
+  cooldown_s: 1.0
+  min_evidence: 0.5
+
+# Production deployments should inject stream URLs, credentials and message
+# broker configuration through environment-specific config outside Git.
