@@ -1,36 +1,67 @@
-# Architecture
+# Architecture and engineering boundaries
 
-This repository is a clean-room public reference implementation inspired by patterns used in real industrial CV work. It intentionally does **not** contain customer video, production thresholds, equipment identifiers, stream URLs, message-broker routes, or proprietary state logic.
+This repository is a clean-room public reference implementation inspired by patterns used in real industrial CV work. It intentionally excludes customer video, production thresholds, equipment identifiers, stream URLs, broker routes, and proprietary process rules.
 
 ```text
 Camera / RTSP / file
         |
         v
-Segmentation detector (optional Ultralytics adapter)
+segmentation detector
         |
         v
-Typed detections -> ROI/spatial filtering
+typed detections + geometry
         |
         v
-Time-based event debouncing / state machine
+spatial policy
         |
         v
-Structured FrameResult / process event
+continuity checks
+        |
+        v
+time-based event state machine
+        |
+        v
+structured event / FrameResult
         |
         +--> UI / metrics / audit log
-        +--> integration adapter (implemented per deployment)
+        +--> deployment adapter
 ```
 
-## Why the state machine is time-based
+## Spatial layer
 
-Industrial pipelines often change processing FPS according to load or activity. Using wall-clock durations rather than fixed frame counts prevents business semantics from changing when the inference sampling rate changes.
+The public runtime supports three explicit policies:
+
+- `center`: detection bbox center must be inside the ROI.
+- `bbox_approx`: overlap is computed against the ROI bounding rectangle. This is dependency-free and not exact polygon intersection.
+- `polygon_vertex`: the fraction of segmentation-polygon vertices inside the ROI must pass a threshold. This uses segmentation geometry but is not exact area IoU.
+
+Real deployments can substitute OpenCV/Shapely mask/polygon intersection without changing the temporal layer.
+
+## Why time-based state is not enough by itself
+
+Using wall-clock durations avoids hard-coding business semantics to inference FPS, but elapsed time alone can incorrectly bridge a dropped stream. `TemporalEventMachine` therefore also enforces monotonic timestamps and an optional maximum observation gap. A gap beyond that bound resets continuity instead of treating the next detection as sustained evidence.
+
+An explicit `reset()` is available for known reconnect/restart events. Gap reset does not synthesize an `ended` event because the system lacks evidence about what happened while observations were missing; downstream deployment policy may choose to emit a separate stream-health event.
+
+## Event semantics
+
+The state machine separates:
+
+- `IDLE`
+- `CANDIDATE`: positive evidence has begun but has not yet met the start duration
+- `ACTIVE`: the process event is considered active
+- `COOLDOWN`: the event has ended and re-triggering is temporarily suppressed
+
+Brief negative detector noise can be tolerated by `end_after_s`. Long observation gaps are handled separately from negative evidence.
 
 ## Deployment boundary
 
-The public project stops at structured event output. In a real deployment, RTSP reconnect policy, backpressure, batching, observability, MES/MQ publishing, secrets and device-specific thresholds belong in environment-specific adapters.
+The public project stops at structured event output. A real deployment still needs stream decoding/reconnect policy, buffering/backpressure, multi-camera scheduling, batching, monitoring, model-version rollout, MES/MQ publishing, secrets, and site-specific thresholds.
 
-## What is intentionally simplified
+## Export boundary
 
-- ROI overlap uses a dependency-free bounding-box approximation; exact polygon-mask overlap can be added with OpenCV/Shapely.
-- The Ultralytics adapter is optional so tests run without model weights or GPU libraries.
-- No performance numbers are claimed without a reproducible benchmark and redistributable test media.
+The Ultralytics export helper exposes ONNX/TensorRT export integration only. No performance or accuracy parity is claimed without a reproducible benchmark and redistributable test media.
+
+## Verification
+
+Core tests use synthetic detections and timestamps so spatial and temporal rules are deterministic and reviewable without a GPU. `examples/synthetic_replay.py` provides a small end-to-end temporal trace and is run in CI.

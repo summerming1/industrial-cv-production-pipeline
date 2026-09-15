@@ -3,11 +3,22 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-def _point_on_segment(px: float, py: float, ax: float, ay: float, bx: float, by: float, eps: float = 1e-9) -> bool:
+def _point_on_segment(
+    px: float,
+    py: float,
+    ax: float,
+    ay: float,
+    bx: float,
+    by: float,
+    eps: float = 1e-9,
+) -> bool:
     cross = (px - ax) * (by - ay) - (py - ay) * (bx - ax)
     if abs(cross) > eps:
         return False
-    return min(ax, bx) - eps <= px <= max(ax, bx) + eps and min(ay, by) - eps <= py <= max(ay, by) + eps
+    return (
+        min(ax, bx) - eps <= px <= max(ax, bx) + eps
+        and min(ay, by) - eps <= py <= max(ay, by) + eps
+    )
 
 
 @dataclass(frozen=True)
@@ -34,17 +45,35 @@ class PolygonROI:
                     inside = not inside
         return inside
 
-    def bbox_intersection_ratio(self, bbox_xyxy: tuple[float, float, float, float]) -> float:
-        """Fast conservative overlap using the ROI bounding box.
+    def bbox_intersection_ratio(
+        self,
+        bbox_xyxy: tuple[float, float, float, float],
+    ) -> float:
+        """Approximate detection overlap using the ROI bounding rectangle.
 
-        Production systems often use polygon-mask overlap. This dependency-free
-        approximation is intentionally simple for the public showcase.
+        This is dependency-free and intentionally conservative. It is not exact
+        polygon/mask intersection.
         """
         xs = [p[0] for p in self.points]
         ys = [p[1] for p in self.points]
         rx1, ry1, rx2, ry2 = min(xs), min(ys), max(xs), max(ys)
         x1, y1, x2, y2 = bbox_xyxy
-        ix1, iy1, ix2, iy2 = max(rx1, x1), max(ry1, y1), min(rx2, x2), min(ry2, y2)
+        ix1, iy1 = max(rx1, x1), max(ry1, y1)
+        ix2, iy2 = min(rx2, x2), min(ry2, y2)
         inter = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
         area = max(0.0, x2 - x1) * max(0.0, y2 - y1)
         return inter / area if area > 0 else 0.0
+
+    def polygon_vertex_ratio(
+        self,
+        polygon: tuple[tuple[float, float], ...],
+    ) -> float:
+        """Return the fraction of detection-polygon vertices inside the ROI.
+
+        This uses segmentation geometry without pretending to be exact polygon
+        area overlap. Production systems can replace it with OpenCV/Shapely.
+        """
+        if not polygon:
+            return 0.0
+        inside = sum(1 for point in polygon if self.contains(point))
+        return inside / len(polygon)
