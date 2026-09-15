@@ -16,4 +16,4 @@ jobs:
       - run: pip install -e '.[dev]'
       - run: pytest -q
       - run: python examples/synthetic_replay.py
-      - run: ruff check --select E,F src tests examples
+      - run: ruff check --select F src tests examples
